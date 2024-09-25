@@ -7,7 +7,6 @@ import base64
 import time
 from io import BytesIO
 from st_on_hover_tabs import on_hover_tabs
-from PIL import Image
 import re
 
 timestr = time.strftime("%Y%m%d-%H%M%S")
