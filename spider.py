@@ -15,8 +15,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Se queda---------------------------
 start = time.perf_counter()
 
-df_mujeres = pd.read_csv(r"C:\Users\Cash\Downloads\spanish-names-master\spanish-names-master\mujeres.csv")
-df_hombres = pd.read_csv(r"C:\Users\Cash\Downloads\spanish-names-master\spanish-names-master\hombres.csv")
+df_mujeres = pd.read_csv(r"mujeres.csv")
+df_hombres = pd.read_csv(r"hombres.csv")
 
 df = pd.concat([df_mujeres, df_hombres])
 
