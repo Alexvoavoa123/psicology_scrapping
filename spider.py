@@ -15,6 +15,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Se queda---------------------------
 start = time.perf_counter()
 
+# df_mujeres = pd.read_csv(r"C:\Users\Cash\Downloads\spanish-names-master\spanish-names-master\mujeres.csv")
+# df_hombres = pd.read_csv(r"C:\Users\Cash\Downloads\spanish-names-master\spanish-names-master\hombres.csv")
+
+
 df_mujeres = pd.read_csv(r"mujeres.csv")
 df_hombres = pd.read_csv(r"hombres.csv")
 
@@ -24,7 +28,7 @@ df = pd.concat([df_mujeres, df_hombres])
 
 
 def seleccionar(x):
-    valores_xpl =  ["UNA","SABER","CITA","HE","TOMA","YA","IRA","LE","SALUD","LEE","CITA","SALUD","VISITA","HA","HAN","MIRA","AREA","ENERO","FEBRERO","MARZO","PASION","PASIÓN"]
+    valores_xpl =  ["UNA","SABER","CITA","HE","TOMA","YA","IRA","LE","SALUD","MAYO","LEE","CITA","SALUD","VISITA","HA","HAN","MIRA","AREA","ENERO","FEBRERO","MARZO","PASION","PASIÓN","FELICIDAD"]
     if x in valores_xpl:
         return True
 
@@ -43,6 +47,19 @@ def quitar_barra(x):
     else:
         return x
 
+
+# def palabras_buscar(row):
+#     try:
+
+#         valores = re.findall(r"[\S]*",row["Nombre de la empresa"])
+#         if pd.isna(row["Fundador"])==True and unidecode(valores[0].upper()) in df["nombre"].values:
+#             return valores[0]
+#         elif row["Fundador"] == "No hay valores" and unidecode(valores[0].upper()) in df["nombre"].values:
+#             return valores[0]
+#         else:
+#             return row["Fundador"]
+#     except:
+#         pass
 
 
 names_value = []
@@ -103,27 +120,28 @@ def fetch_html(data_urls,responses_data):
         valores = set()
         numeros = set()
         correo_electrónico = set()
+        fundador = set()
+
+        # print(data_urls[1])
 
         for data in data_urls[1]:
-            # print(data)
-            # print("----------------------")
-
-            # if id_valor in responses_data.keys():
-
-            #     soup = BeautifulSoup(responses_data[id_valor], "lxml")
-            # else:
+      
             session = HTMLSession()
             response = session.get(data)
             soup = BeautifulSoup(response.text, "lxml")
 
-            resultados = [tag.get_text() for tag in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', "a","span"])]
-            if data == "https://www.tuespaciopsicologico.com/equipo/":
-                print(soup)
+            resultados = [tag.get_text() for tag in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', "a","span","header","href"])]
 
+
+           
             for resultado in resultados:
                 if unidecode(re.findall(r"[\S]*", resultado)[0].upper()) in df["nombre"].values and re.findall(r"[\S]*", resultado)[0].capitalize() not in ",".join(list(valores)):
-                    # print(resultado)
+
                     valores.add(resultado.replace("\n", ""))
+                    # if "fundador" in resultado or "director" in resultado:
+                    #     # fundador.add(f"{re.findall(r"[\S]*", resultado)[0]} {re.findall(r"[\S]*", resultado)[1]}")
+                    #     fundador.add(resultado)
+
                 elif re.findall(r'\+34{1,3}[\S\s]{1,30}', resultado):
                     numeros.add(resultado.replace("\n", ""))
                 elif len(re.findall(r'\d', resultado)) == 9 and (re.findall(r'\d', resultado)[0] == "6" or re.findall(r'\d', resultado)[0] == "9"):
@@ -131,14 +149,34 @@ def fetch_html(data_urls,responses_data):
                 elif "@" in resultado and len(resultado.split()) == 1:
                     correo_electrónico.add(resultado.replace("\n", "").strip())
 
-        valores_dict["Empresa"].append({
+        
+                    
+
+
+        data_dict_final = {
             id_valor: {
                 "Nombres de los psicologos": list(valores),  # Convertir a lista
                 "Número de psicologos": list(numeros),  # Convertir a lista
                 "Correo electrónico": list(correo_electrónico),  # Convertir a lista
-                "Cantidad": len(valores)
+                "Cantidad": len(valores),
+                "Fundador/director" : list(fundador)
             }
-        })
+        }
+
+
+        #  or re.findall(r"[\S]*", value)[-1].lower() in data_dict_final[id_valor]["Correo electrónico"][0]
+        for value in data_dict_final[id_valor]["Nombres de los psicologos"]:
+    
+            if re.findall(r"[\S]*", value)[0].lower() in data_dict_final[id_valor]["Correo electrónico"][0] or "fundador" in value or "director" in value or data_dict_final[id_valor]["Cantidad"] == 1:
+                data_dict_final[id_valor]["Fundador/director"].append(value)
+
+        
+
+            # elif len(re.findall(r"[\S]*", value)) > 1:
+            #     if value.split()[-1] in data_dict_final[id_valor]["Correo electrónico"][0]:
+            #         print(value.split()[-1])
+        
+        valores_dict["Empresa"].append(data_dict_final)
         # print(f"""
         # Valores : {valores},
         # Numeros : {numeros},
@@ -231,18 +269,21 @@ def async_spider(dataframe):
 
         if str(row["ID de registro"]) in data_keysss:
             
-            return final_dict[str(row["ID de registro"])]["Nombres de los psicologos"],final_dict[str(row["ID de registro"])]["Número de psicologos"],final_dict[str(row["ID de registro"])]["Correo electrónico"],final_dict[str(row["ID de registro"])]["Cantidad"]
+            return final_dict[str(row["ID de registro"])]["Nombres de los psicologos"],final_dict[str(row["ID de registro"])]["Número de psicologos"],final_dict[str(row["ID de registro"])]["Correo electrónico"],final_dict[str(row["ID de registro"])]["Cantidad"],final_dict[str(row["ID de registro"])]["Fundador/director"]
         else:
-            return 1,2,3,4
+            return "No hay valores","No hay valores","No hay valores","No hay valores","No hay valores"
     
-    df_listado[["Nombres de los psicologos","Número de psicologos","Correo electrónico","Cantidad"]] = pd.DataFrame(df_listado.apply(traer_data_json, axis=1).tolist(), index=df_listado.index)
+    df_listado[["Nombres de los psicologos","Número de psicologos","Correo electrónico","Cantidad","Fundador"]] = pd.DataFrame(df_listado.apply(traer_data_json, axis=1).tolist(), index=df_listado.index)
     df_listado["Nombres de los psicologos"] = df_listado["Nombres de los psicologos"].fillna("").astype(str)
     df_listado["Número de psicologos"] = df_listado["Número de psicologos"].fillna("").astype(str)
     df_listado["Correo electrónico"] = df_listado["Correo electrónico"].fillna("").astype(str)
+    df_listado["Fundador"] = df_listado["Fundador"].fillna("").astype(str)
 
     df_listado["Nombres de los psicologos"] = df_listado["Nombres de los psicologos"].str.replace(r"[\[\]']", "", regex=True)
     df_listado["Número de psicologos"] = df_listado["Número de psicologos"].str.replace(r"[\[\]']", "", regex=True)
     df_listado["Correo electrónico"] = df_listado["Correo electrónico"].str.replace(r"[\[\]']", "", regex=True)
+    df_listado["Fundador"] = df_listado["Fundador"].str.replace(r"[\[\]']", "", regex=True)
+    # df_listado["Fundador"] = df_listado.apply(palabras_buscar,axis=1)
     
     
     return df_listado
@@ -251,13 +292,3 @@ def async_spider(dataframe):
 
 
     
-
-# if __name__ == "__main__":
-#     df = main()
-    # print(df)
-    # df.to_excel(r"C:\Users\Cash\Desktop\portfolio project\last_values.xlsx")
-
-    # Tiempo total
-    # finish = time.perf_counter()
-    # print(f"Tiempo total de ejecución: {finish - start} segundos")
-
