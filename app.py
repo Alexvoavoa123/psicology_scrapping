@@ -24,6 +24,33 @@ def main():
     # values = ["Scrapping","About"]
     # st.sidebar.selectbox("Valores",values)
     st.markdown('<style>' + open('./style.css').read() + '</style>', unsafe_allow_html=True)
+    st.markdown("""
+                    <style>
+                    .loading-container {
+                        display: flex;
+                        align-items: center;
+                        margin-top: 20px;
+                        justify-content: center;
+                    }
+                    .loading-container span {
+                        font-size: 16px;
+                        color: #333;
+                        margin-right: 10px;
+                    }
+                    .loading {
+                        width: 30px;
+                        height: 30px;
+                        border: 5px solid #f3f3f3;
+                        border-top: 5px solid #3498db;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
 
     with st.sidebar:
         tabs = on_hover_tabs(tabName=['Scrapping',"About"],
@@ -55,9 +82,20 @@ def main():
         
             value = st.form_submit_button("Submit request")
         if value:
+            if dataframe_value:
+
+                loading_placeholder = st.empty()
+
+                loading_placeholder.markdown("""
+                    <div class="loading-container" id="loading-container">
+                        <span>Extrayendo datos de administradores de fincas. Por favor espere...</span>
+                        <div class="loading"></div>
+                    </div>
+                """, unsafe_allow_html=True)
             
             df = scrapping_data(dataframe_value)
             st.success("Successfully scrapped!")
+            loading_placeholder.empty()
             st.dataframe(df)
             tab1,tab2,tab3 = st.tabs(["CSV","Excel","JSON"])
 
